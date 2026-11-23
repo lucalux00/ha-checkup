@@ -1,0 +1,45 @@
+{%- set ns = namespace(p=[], n=0, w=0, wn=0, au=0, ar=[], na=[], nt=[]) -%}
+{%- set osservati = ['light','switch','sensor','binary_sensor','climate','cover','fan','lock','media_player','camera','vacuum','humidifier','water_heater','siren','valve','alarm_control_panel','lawn_mower'] -%}
+{%- set adesso = as_timestamp(now()) -%}
+{%- set ha_ce = config_entry_id is defined and config_entry_attr is defined -%}
+{%- for s in states -%}
+{%- set a = area_name(s.entity_id) -%}
+{%- set ns.n = ns.n + 1 -%}
+{%- if s.domain in osservati -%}
+{%- set ns.w = ns.w + 1 -%}
+{%- if a is none -%}
+{%- set ns.wn = ns.wn + 1 -%}
+{%- set did = device_id(s.entity_id) -%}
+{%- set ns.na = ns.na + [(device_attr(did, 'name_by_user') or device_attr(did, 'name')) if did else ''] -%}
+{%- endif -%}
+{%- endif -%}
+{%- if s.domain == 'automation' -%}{%- set ns.au = ns.au + 1 -%}{%- endif -%}
+{%- if s.state == 'unavailable' -%}
+{%- set k = 'gh' if s.attributes.get('restored') else ('ab' if s.domain in ['automation','script'] else 'nd') -%}
+{%- set did = device_id(s.entity_id) -%}
+{%- set ce = config_entry_id(s.entity_id) if ha_ce else none -%}
+{%- set ns.p = ns.p + [[k, s.entity_id, s.name, a, '', (device_attr(did, 'name_by_user') or device_attr(did, 'name')) if did else none, config_entry_attr(ce, 'domain') if ce else none, config_entry_attr(ce, 'state') if ce else none]] -%}
+{%- elif s.domain == 'sensor' and s.attributes.get('device_class') == 'battery' and (s.state | float(101)) <= 20 -%}
+{%- set ns.p = ns.p + [['bt', s.entity_id, s.name, a, s.state]] -%}
+{%- elif s.domain == 'binary_sensor' and s.attributes.get('device_class') == 'battery' and s.state == 'on' -%}
+{%- set ns.p = ns.p + [['bt', s.entity_id, s.name, a, 'bassa']] -%}
+{%- elif s.domain == 'update' and s.state == 'on' -%}
+{%- set ns.p = ns.p + [['up', s.entity_id, s.name, a, s.attributes.get('latest_version') | string]] -%}
+{%- elif s.domain == 'automation' -%}
+{%- set lt = s.attributes.get('last_triggered') -%}
+{%- if s.state == 'off' -%}
+{%- set ns.p = ns.p + [['ao', s.entity_id, s.name, a, '']] -%}
+{%- elif lt is none -%}
+{%- set ns.p = ns.p + [['an', s.entity_id, s.name, a, '']] -%}
+{%- elif adesso - as_timestamp(lt) > 7776000 -%}
+{%- set ns.p = ns.p + [['aw', s.entity_id, s.name, a, ((adesso - as_timestamp(lt)) / 86400) | int | string]] -%}
+{%- endif -%}
+{%- endif -%}
+{%- endfor -%}
+{%- for ar in areas() -%}
+{%- set ns.ar = ns.ar + [[area_name(ar), area_entities(ar) | count]] -%}
+{%- endfor -%}
+{%- for d in ns.na | unique -%}
+{%- set ns.nt = ns.nt + [[d, ns.na | select('eq', d) | list | count]] -%}
+{%- endfor -%}
+CHECKUP:{{ {'v':2,'n':ns.n,'w':ns.w,'wn':ns.wn,'au':ns.au,'ar':ns.ar,'na':(ns.nt | sort(attribute='1', reverse=true))[:12],'pt':ns.p | count,'p':ns.p[:400]} | to_json }}
