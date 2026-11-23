@@ -46,13 +46,13 @@ One line, `CHECKUP:` followed by JSON:
 ```json
 {
   "v": 2,
-  "n": 2054,            // all entities
-  "w": 1086,            // "furnishable" entities (lights, sensors, switches, ...)
-  "wn": 637,            // ... of which with no area
-  "au": 61,             // automations
-  "ar": [["Kitchen", 87]],            // [area name, entities in it]
+  "n": 412,             // all entities
+  "w": 286,             // "furnishable" entities (lights, sensors, switches, ...)
+  "wn": 41,             // ... of which with no area
+  "au": 23,             // automations
+  "ar": [["Kitchen", 48]],            // [area name, entities in it]
   "na": [["Router", 3]],              // top devices by entities without an area ("" = no device)
-  "pt": 390,            // total number of problems
+  "pt": 28,             // total number of problems
   "p": [                // first 400 problems
     ["nd", "sensor.x", "Name", "Area|null", "", "Device|null", "integration|null", "loaded|null"]
   ]
